@@ -26,18 +26,15 @@ app.get('/', (req, res) => {
 
 app.post('/register', async (req, res) => {
 	try {
-		console.log(req.body);
 		const client = await mongoClient.connect(DB_URL);
 		const db = client.db(DATA_BASE);
-		console.log(DATA_BASE);
 		const found = await db.collection(USERS_COLLECTION).findOne({ email: req.body.email });
-		console.log(found);
 		if (found) {
 			res.status(400).json({ message: 'User Already Exists' });
 		} else {
 			const salt = await bcrypt.genSalt(10);
 			const hash = await bcrypt.hash(req.body.password, salt);
-			console.log(hash);
+
 			req.body.password = hash;
 			await db.collection(USERS_COLLECTION).insertOne(req.body);
 			client.close();
@@ -60,6 +57,31 @@ app.post('/register', async (req, res) => {
 				}
 			});
 			res.status(200).json({ message: 'User Created' });
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
+app.post('/login', async (req, res) => {
+	try {
+		const client = await mongoClient.connect(DB_URL);
+		const db = client.db(DATA_BASE);
+		let user = await db.collection(USERS_COLLECTION).findOne({ email: req.body.email });
+		if (user) {
+			let match = await bcrypt.compare(req.body.password, user.password);
+			console.log(match);
+			if (match) {
+				const token = jwt.sign({ email: req.body.email }, process.env.JWT_SECRET, {
+					expiresIn: '1h',
+				});
+				res.status(200).json({ message: 'User Allowed', token });
+			} else {
+				res.status(400).json({ message: 'Invalid email or password' });
+			}
+		} else {
+			res.status(400).json({ message: "User does't exist" });
 		}
 	} catch (error) {
 		console.log(error);
