@@ -89,4 +89,38 @@ app.post('/login', async (req, res) => {
 	}
 });
 
+app.post('/forgot', async (req, res) => {
+	try {
+		const client = await mongoClient.connect(DB_URL);
+		const db = client.db(DATA_BASE);
+		let user = await db.collection(USERS_COLLECTION).findOne({ email: req.body.email });
+		if (user) {
+			const mailOptions = {
+				from: process.env.EMAIL,
+				to: req.body.email,
+				subject: 'Request to Reset Password!!',
+				html: `
+               <p>THere is the link to reset your password</p>
+               <p>${process.env.FRONTEND_URL}/reset</p>
+               `,
+			};
+			mail.sendMail(mailOptions, (err, data) => {
+				if (err) {
+					console.log(err);
+				} else {
+					console.log('Email Sent');
+				}
+			});
+			res
+				.status(200)
+				.json({ message: 'Reset mail sent to specified email, please check your email' });
+		} else {
+			res.status(400).json({ message: "Email Doestn't exist, Try Again with valid Email" });
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
 app.listen(PORT, console.log(`:::server is up and running on port ${PORT}:::`));
