@@ -123,7 +123,7 @@ app.post('/forgot', async (req, res) => {
 	}
 });
 
-app.post('/reset', async (req, res) => {
+app.put('/reset', async (req, res) => {
 	try {
 		const client = await mongoClient.connect(DB_URL);
 		const db = client.db(DATA_BASE);
