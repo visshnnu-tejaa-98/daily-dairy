@@ -20,6 +20,29 @@ dotenv.config();
 app.use(cors());
 app.use(express.json());
 
+const Authenticate = async (req, res, next) => {
+	try {
+		const bearer = await req.headers['authorization'];
+		console.log(bearer);
+		if (!bearer) {
+			return res.json({ message: 'access failed' });
+		} else {
+			jwt.verify(bearer, process.env.JWT_SECRET, (err, decode) => {
+				if (decode) {
+					req.body.auth = decode;
+					console.log('Authentication middleware success');
+					next();
+				} else {
+					res.json({ message: 'Authentication Failed' });
+				}
+			});
+		}
+	} catch (error) {
+		console.log(error);
+		res.json({ message: 'Something went wrong in authentication' });
+	}
+};
+
 app.get('/', (req, res) => {
 	res.send('Welcome to Daily Dairy');
 });
@@ -138,6 +161,44 @@ app.put('/reset', async (req, res) => {
 			res.status(200).json({ message: 'Password reseted successfully' });
 		} else {
 			res.status(400).json({ message: "User Doesn't exists, Try again with valid email" });
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
+app.post('/addPost', [Authenticate], async (req, res) => {
+	try {
+		const client = await mongoClient.connect(DB_URL);
+		const db = client.db(DATA_BASE);
+		const post = await db
+			.collection(POSTS_COLLECTION)
+			.findOne({ email: req.body.auth.email, date: req.body.date });
+		console.log(post);
+		if (!post) {
+			await db
+				.collection(POSTS_COLLECTION)
+				.insertOne({ email: req.body.auth.email, date: req.body.date, post: req.body.data });
+			res.status(200).json({ message: 'Submitted Successfully' });
+		} else {
+			console.log(post);
+			res.status(400).json({ message: "You're Supposed to submit one time per day!" });
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
+app.get('/posts/:id', [Authenticate], async (req, res) => {
+	try {
+		console.log(req.body);
+		const client = await mongoClient.connect(DB_URL);
+		const db = client.db(DATA_BASE);
+		const post = await db.collection(POSTS_COLLECTION).findOne({ email: req.body.auth.email });
+		if (post) {
+			res.status(200).json({ post });
 		}
 	} catch (error) {
 		console.log(error);
