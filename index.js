@@ -23,14 +23,14 @@ app.use(express.json());
 const Authenticate = async (req, res, next) => {
 	try {
 		const bearer = await req.headers['authorization'];
-		console.log(bearer);
+		// console.log(bearer);
 		if (!bearer) {
 			return res.json({ message: 'access failed' });
 		} else {
 			jwt.verify(bearer, process.env.JWT_SECRET, (err, decode) => {
 				if (decode) {
 					req.body.auth = decode;
-					console.log('Authentication middleware success');
+					// console.log('Authentication middleware success');
 					next();
 				} else {
 					res.json({ message: 'Authentication Failed' });
@@ -168,6 +168,34 @@ app.put('/reset', async (req, res) => {
 	}
 });
 
+app.post('/contact', async (req, res) => {
+	try {
+		console.log(req.body);
+		const mailOptions = {
+			from: req.body.email,
+			to: process.env.EMAIL,
+			subject: 'User Contacted!!',
+			html: `
+               <p>Hi Sir,</p>
+               <p>My name is ${req.body.name}</p>
+					<p><strong>Here is the message!!</strong></p>
+               <p>${req.body.message}</p>
+               `,
+		};
+		mail.sendMail(mailOptions, (err, data) => {
+			if (err) {
+				console.log(err);
+			} else {
+				console.log('Email Sent');
+			}
+		});
+		res.json({ message: 'Mail Sent' });
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
 app.post('/addPost', [Authenticate], async (req, res) => {
 	try {
 		const client = await mongoClient.connect(DB_URL);
@@ -191,14 +219,97 @@ app.post('/addPost', [Authenticate], async (req, res) => {
 	}
 });
 
-app.get('/posts/:id', [Authenticate], async (req, res) => {
+app.get('/posts/:date', [Authenticate], async (req, res) => {
+	try {
+		const client = await mongoClient.connect(DB_URL);
+		const db = client.db(DATA_BASE);
+		const post = await db
+			.collection(POSTS_COLLECTION)
+			.findOne({ email: req.body.auth.email, date: req.params.date });
+		if (post) {
+			res.status(200).json({ post });
+		} else {
+			res.status(400).json({ message: 'No data found, Try with Another Date' });
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
+app.post('/posts', [Authenticate], async (req, res) => {
 	try {
 		console.log(req.body);
 		const client = await mongoClient.connect(DB_URL);
 		const db = client.db(DATA_BASE);
-		const post = await db.collection(POSTS_COLLECTION).findOne({ email: req.body.auth.email });
+		let post = '';
+		let year = `/${req.body.year}/`;
+
+		if (req.body.month === 'Jan') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Jan/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Feb') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Feb/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Mar') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Mar/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Apr') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Apr/, year] } })
+				.toArray();
+		} else if (req.body.month === 'May') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^May/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Jun') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Jun/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Jul') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Jul/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Aug') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Aug/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Sep') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Sep/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Oct') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Oct/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Nov') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Nov/, year] } })
+				.toArray();
+		} else if (req.body.month === 'Dec') {
+			post = await db
+				.collection(POSTS_COLLECTION)
+				.find({ email: req.body.auth.email, date: { $in: [/^Dec/, year] } })
+				.toArray();
+		}
 		if (post) {
 			res.status(200).json({ post });
+		} else {
+			res.status(400).json({ message: 'No data found, Try with Another Date' });
 		}
 	} catch (error) {
 		console.log(error);
