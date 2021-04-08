@@ -317,4 +317,52 @@ app.post('/posts', [Authenticate], async (req, res) => {
 	}
 });
 
+app.get('/profile', [Authenticate], async (req, res) => {
+	try {
+		console.log(req.body);
+		const client = await mongoClient.connect(DB_URL);
+		const db = client.db(DATA_BASE);
+		const found = await db.collection(USERS_COLLECTION).findOne({ email: req.body.auth.email });
+		if (found) {
+			res.status(200).json(found);
+		} else {
+			res.status(400).json({ message: 'Something went wrong' });
+		}
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
+app.put('/profile', [Authenticate], async (req, res) => {
+	try {
+		console.log(req.body);
+		const client = await mongoClient.connect(DB_URL);
+		const db = client.db(DATA_BASE);
+		await db.collection(USERS_COLLECTION).updateOne(
+			{ email: req.body.auth.email },
+			{
+				$set: {
+					fname: req.body.fname,
+					lname: req.body.lname,
+					age: req.body.age,
+					phone: req.body.phone,
+					mobile: req.body.mobile,
+					height: req.body.height,
+					weight: req.body.weight,
+					blood: req.body.blood,
+					address1: req.body.address1,
+					address2: req.body.address2,
+					state: req.body.state,
+					country: req.body.country,
+				},
+			}
+		);
+		res.status(200).json({ message: 'Profile Updated' });
+	} catch (error) {
+		console.log(error);
+		res.status(400).json({ message: 'something went wrong' });
+	}
+});
+
 app.listen(PORT, console.log(`:::server is up and running on port ${PORT}:::`));
